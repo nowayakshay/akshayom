@@ -7,6 +7,7 @@ import { daysAgo, formatLongDate, isConsecutiveDate, todayKey } from './utils/da
 import { buildInitialState, defaultEntry, loadState, saveState } from './utils/storage'
 
 type TabKey = 'dashboard' | 'mood' | 'habits' | 'stress' | 'tests' | 'insights' | 'future'
+type ViewKey = 'landing' | 'dashboard'
 
 const moodOptions = ['😞', '🙁', '😐', '🙂', '😄']
 const moodTags: MoodTag[] = ['work', 'family', 'health', 'unknown']
@@ -63,11 +64,125 @@ const buildStressAlert = (entries: Record<string, DailyEntry>): string | null =>
   return null
 }
 
+function LandingPage({ onLaunch }: { onLaunch: () => void }) {
+  useEffect(() => {
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>('.reveal'))
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view')
+          }
+        })
+      },
+      { threshold: 0.18, rootMargin: '0px 0px -40px 0px' },
+    )
+
+    nodes.forEach((node) => observer.observe(node))
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <main className="landing page-enter">
+      <section className="landing-hero card reveal in-view">
+        <div className="hero-copy">
+          <p className="eyebrow">Akshayom</p>
+          <h1>Track Your Mind. Build Your Life.</h1>
+          <p className="subtitle">
+            Akshayom is your personal inner operating system — track mood, habits, stress, and growth patterns in one
+            calm dashboard.
+          </p>
+          <p className="founder-line">Built by a founder, for self-aware builders.</p>
+          <div className="hero-actions">
+            <button className="primary" onClick={onLaunch}>
+              Get Started
+            </button>
+            <button className="ghost" onClick={onLaunch}>
+              View Dashboard Demo
+            </button>
+          </div>
+        </div>
+        <div className="shape-layer" aria-hidden="true">
+          <span className="shape s1" />
+          <span className="shape s2" />
+          <span className="shape s3" />
+        </div>
+      </section>
+
+      <section className="landing-section reveal">
+        <h2>Core Features</h2>
+        <div className="feature-grid">
+          <article className="card feature-card">
+            <div className="feature-icon">🙂</div>
+            <h3>Mood Tracking</h3>
+            <p className="muted">Log daily emotions, intensity, and tags with a clean visual timeline.</p>
+          </article>
+          <article className="card feature-card">
+            <div className="feature-icon">✓</div>
+            <h3>Habit Analytics</h3>
+            <p className="muted">Track streaks and completion rates to understand your consistency patterns.</p>
+          </article>
+          <article className="card feature-card">
+            <div className="feature-icon">◔</div>
+            <h3>Stress Monitoring</h3>
+            <p className="muted">Capture stress trends and triggers with weekly summaries and supportive alerts.</p>
+          </article>
+          <article className="card feature-card">
+            <div className="feature-icon">↗</div>
+            <h3>Weekly Insights</h3>
+            <p className="muted">Get simple, meaningful observations from your behavior patterns each week.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="landing-section reveal">
+        <h2>How It Works</h2>
+        <div className="steps card">
+          <div className="step">
+            <strong>1. Track Daily</strong>
+            <p className="muted">Capture mood, habits, stress, and notes in less than two minutes.</p>
+          </div>
+          <div className="step-sep" />
+          <div className="step">
+            <strong>2. Reflect Weekly</strong>
+            <p className="muted">Review trends, test results, and meaningful summaries across your week.</p>
+          </div>
+          <div className="step-sep" />
+          <div className="step">
+            <strong>3. Improve Gradually</strong>
+            <p className="muted">Use insights to make small, sustainable adjustments to your routines.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-section reveal">
+        <article className="card final-cta">
+          <h2>Start building your inner clarity today.</h2>
+          <button className="primary glow" onClick={onLaunch}>
+            Launch Dashboard
+          </button>
+        </article>
+      </section>
+
+      <footer className="footer reveal in-view">
+        <p>
+          © 2026 Akshayom<br />
+          Crafted with clarity by{' '}
+          <a href="https://www.linkedin.com" target="_blank" rel="noreferrer">
+            Akshay
+          </a>
+        </p>
+      </footer>
+    </main>
+  )
+}
+
 function App() {
   const [state, setState] = useState<AppState>(() => {
     if (typeof window === 'undefined') return buildInitialState()
     return loadState()
   })
+  const [view, setView] = useState<ViewKey>('landing')
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard')
   const [habitDraft, setHabitDraft] = useState('')
   const [moodSaved, setMoodSaved] = useState(false)
@@ -112,10 +227,12 @@ function App() {
     () => average(weekEntries.map((entry) => entry.stressLevel)).toFixed(0),
     [weekEntries],
   )
+
   const weeklyStressSeries = useMemo(
     () => weekKeys.map((date) => state.dailyEntries[date]?.stressLevel ?? 0),
     [weekKeys, state.dailyEntries],
   )
+
   const stressChart = useMemo(() => {
     const width = 640
     const height = 180
@@ -299,17 +416,38 @@ function App() {
     return lines
   }, [activeHabits, weekEntries, weeklyMoodAverage])
 
+  if (view === 'landing') {
+    return (
+      <div className={`app theme-${state.theme}`}>
+        <div className="landing-top-actions">
+          <button className="ghost" onClick={toggleTheme}>
+            {state.theme === 'light' ? 'Dark mode' : 'Light mode'}
+          </button>
+          <button className="primary" onClick={() => setView('dashboard')}>
+            Open App
+          </button>
+        </div>
+        <LandingPage onLaunch={() => setView('dashboard')} />
+      </div>
+    )
+  }
+
   return (
-    <div className={`app theme-${state.theme}`}>
+    <div className={`app theme-${state.theme} page-enter`}>
       <header className="hero card">
         <div>
-          <p className="eyebrow">Akshayom</p>
+          <p className="eyebrow">Akshayom Dashboard</p>
           <h1>Personal Inner Operating System</h1>
           <p className="subtitle">{formatLongDate(today)}</p>
         </div>
-        <button className="ghost" onClick={toggleTheme}>
-          {state.theme === 'light' ? 'Dark mode' : 'Light mode'}
-        </button>
+        <div className="hero-actions">
+          <button className="ghost" onClick={() => setView('landing')}>
+            Landing
+          </button>
+          <button className="ghost" onClick={toggleTheme}>
+            {state.theme === 'light' ? 'Dark mode' : 'Light mode'}
+          </button>
+        </div>
       </header>
 
       <nav className="tabs">
@@ -598,7 +736,13 @@ function App() {
         <section className="grid">
           <article className="card">
             <h2>Self-assessment tests</h2>
-            <select value={selectedTestId} onChange={(event) => { setSelectedTestId(event.target.value); setAnswers({}) }}>
+            <select
+              value={selectedTestId}
+              onChange={(event) => {
+                setSelectedTestId(event.target.value)
+                setAnswers({})
+              }}
+            >
               {ASSESSMENT_TESTS.map((test) => (
                 <option key={test.id} value={test.id}>
                   {test.title}
