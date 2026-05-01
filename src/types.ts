@@ -56,3 +56,6 @@ export interface AppState {
   dailyEntries: Record<string, DailyEntry>
   testHistory: TestResult[]
 }
+
+export type TabKey = 'dashboard' | 'mood' | 'habits' | 'stress' | 'tests' | 'insights' | 'future'
+export type ViewKey = 'landing' | 'dashboard'
